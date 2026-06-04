@@ -117,6 +117,60 @@ function toDdMmYyyy(date) {
     return `${dd}-${mm}-${yyyy}`;
 }
 
+function firstNonEmptyValue(obj, keys) {
+    if (!obj || typeof obj !== 'object') return '';
+    for (let i = 0; i < keys.length; i += 1) {
+        const k = keys[i];
+        const v = obj[k];
+        if (v === undefined || v === null) continue;
+        const s = String(v).trim();
+        if (s.length > 0) return s;
+    }
+    return '';
+}
+
+function normalizeCode(value) {
+    return String(value || '').trim();
+}
+
+function masterCode(row) {
+    return normalizeCode(firstNonEmptyValue(row, ['Product Code', 'Part Code', 'PartCode', 'Code', 'Item Code']));
+}
+
+function masterDesc(row) {
+    return firstNonEmptyValue(row, ['Product Description', 'Description', 'Part Description', 'Item Description']);
+}
+
+function masterUom(row) {
+    return firstNonEmptyValue(row, ['UOM', 'UoM', 'Unit', 'Units']);
+}
+
+function masterMoq(row) {
+    const raw = firstNonEmptyValue(row, ['MOQ / ROL', 'MOQ', 'ROL', 'Min Qty', 'Minimum']);
+    const n = Number(raw || 0);
+    return Number.isFinite(n) ? n : 0;
+}
+
+function inwardCode(row) {
+    return normalizeCode(firstNonEmptyValue(row, ['Part Code', 'Product Code', 'PartCode', 'Code', 'Item Code']));
+}
+
+function inwardQty(row) {
+    const raw = firstNonEmptyValue(row, ['Quantity', 'Qty']);
+    const n = Number(raw || 0);
+    return Number.isFinite(n) ? n : 0;
+}
+
+function outwardCode(row) {
+    return normalizeCode(firstNonEmptyValue(row, ['Product Code', 'Part Code', 'PartCode', 'Code', 'Item Code']));
+}
+
+function outwardQty(row) {
+    const raw = firstNonEmptyValue(row, ['Quantity', 'Qty']);
+    const n = Number(raw || 0);
+    return Number.isFinite(n) ? n : 0;
+}
+
 function parseDdMmYyyy(value) {
     const raw = String(value || '').trim();
     const match = raw.match(/^(\d{2})-(\d{2})-(\d{4})$/);
@@ -222,27 +276,34 @@ async function loadFromLocalDbHandle(handle) {
 
 function buildWorkbookFromState() {
     const wb = XLSX.utils.book_new();
-    const cleanMaster = masterData.map(row => {
-        const out = {};
-        Object.keys(row || {}).forEach((k) => {
-            if (!String(k).startsWith('_')) out[k] = row[k];
-        });
-        return out;
-    });
-    const cleanInward = inwardData.map(row => {
-        const out = {};
-        Object.keys(row || {}).forEach((k) => {
-            if (!String(k).startsWith('_')) out[k] = row[k];
-        });
-        return out;
-    });
-    const cleanOutward = outwardData.map(row => {
-        const out = {};
-        Object.keys(row || {}).forEach((k) => {
-            if (!String(k).startsWith('_')) out[k] = row[k];
-        });
-        return out;
-    });
+    const cleanMaster = masterData
+        .map((row) => ({
+            "Product Code": masterCode(row),
+            "Product Description": masterDesc(row),
+            "MOQ / ROL": masterMoq(row),
+            "UOM": masterUom(row)
+        }))
+        .filter((row) => row["Product Code"]);
+
+    const cleanInward = inwardData.map((row) => ({
+        "Date": String((row && row["Date"]) || '').trim(),
+        "DC No / Inv No": String((row && row["DC No / Inv No"]) || '').trim(),
+        "Part Code": inwardCode(row),
+        "Quantity": inwardQty(row),
+        "Location": String((row && row["Location"]) || '').trim(),
+        "Remarks": String((row && row["Remarks"]) || '').trim()
+    }));
+
+    const cleanOutward = outwardData.map((row) => ({
+        "Date": String((row && row["Date"]) || '').trim(),
+        "Invoice No": String((row && row["Invoice No"]) || '').trim(),
+        "DC No": String((row && row["DC No"]) || '').trim(),
+        "Product Code": outwardCode(row),
+        "Quantity": outwardQty(row),
+        "Delivery Location": String((row && row["Delivery Location"]) || '').trim(),
+        "Approved By": String((row && row["Approved By"]) || '').trim(),
+        "Remarks": String((row && row["Remarks"]) || '').trim()
+    }));
 
     const wsMaster = XLSX.utils.json_to_sheet(cleanMaster);
     XLSX.utils.book_append_sheet(wb, wsMaster, "Master");
@@ -392,33 +453,43 @@ function scheduleGoogleAutoSave(reason) {
 
 // Logic to calculate live stock based on Inward and Outward
 function calculateLiveStock() {
-    const stockMap = {};
+    const stockMap = new Map();
 
-    masterData.forEach(item => {
-        stockMap[item["Product Code"]] = {
-            desc: item["Product Description"],
-            uom: item["UOM"],
-            moq: item["MOQ / ROL"],
-            available: 0
+    masterData.forEach((row) => {
+        const code = masterCode(row);
+        if (!code) return;
+        const key = code.toUpperCase();
+        const existing = stockMap.get(key);
+        const next = {
+            code,
+            desc: masterDesc(row),
+            uom: masterUom(row),
+            moq: masterMoq(row),
+            available: existing ? existing.available : 0
         };
+        if (!existing) stockMap.set(key, next);
+        else stockMap.set(key, next);
     });
 
-    inwardData.forEach(item => {
-        if(stockMap[item["Part Code"]]) {
-            stockMap[item["Part Code"]].available += Number(item["Quantity"] || 0);
-        }
+    inwardData.forEach((row) => {
+        const code = inwardCode(row);
+        if (!code) return;
+        const key = code.toUpperCase();
+        const item = stockMap.get(key);
+        if (!item) return;
+        item.available += inwardQty(row);
     });
 
-    outwardData.forEach(item => {
-        if(stockMap[item["Product Code"]]) {
-            stockMap[item["Product Code"]].available -= Number(item["Quantity"] || 0);
-        }
+    outwardData.forEach((row) => {
+        const code = outwardCode(row);
+        if (!code) return;
+        const key = code.toUpperCase();
+        const item = stockMap.get(key);
+        if (!item) return;
+        item.available -= outwardQty(row);
     });
 
-    return Object.keys(stockMap).map(code => ({
-        code: code,
-        ...stockMap[code]
-    }));
+    return Array.from(stockMap.values());
 }
 
 // Render Tables
@@ -427,10 +498,10 @@ function renderMasterTable() {
     tbody.innerHTML = masterData.map((item, index) => `
         <tr>
             <td>${index + 1}</td>
-            <td>${item["Product Code"] || ''}</td>
-            <td>${item["Product Description"] || ''}</td>
-            <td>${item["MOQ / ROL"] || 0}</td>
-            <td>${item["UOM"] || ''}</td>
+            <td>${masterCode(item) || ''}</td>
+            <td>${masterDesc(item) || ''}</td>
+            <td>${masterMoq(item) || 0}</td>
+            <td>${masterUom(item) || ''}</td>
         </tr>
     `).join('');
 }
@@ -447,8 +518,8 @@ function renderInwardTable() {
             <td>${index + 1}</td>
             <td>${item["Date"] || ''}</td>
             <td>${item["DC No / Inv No"] || ''}</td>
-            <td>${item["Part Code"] || ''}</td>
-            <td class="qty-highlight">${item["Quantity"] || 0}</td>
+            <td>${inwardCode(item) || ''}</td>
+            <td class="qty-highlight">${inwardQty(item) || 0}</td>
             <td>${item["Location"] || ''}</td>
             <td>${item["Remarks"] || ''}</td>
             <td>
@@ -482,8 +553,8 @@ function renderOutwardTable() {
             <td>${item["Date"] || ''}</td>
             <td>${item["Invoice No"] || ''}</td>
             <td>${item["DC No"] || ''}</td>
-            <td>${item["Product Code"] || ''}</td>
-            <td>${item["Quantity"] || 0}</td>
+            <td>${outwardCode(item) || ''}</td>
+            <td>${outwardQty(item) || 0}</td>
             <td>${item["Delivery Location"] || ''}</td>
             <td>${item["Approved By"] || ''}</td>
             <td>${item["Remarks"] || ''}</td>
@@ -562,9 +633,9 @@ function updateMasterCodesDatalist() {
 
     const codeToDesc = new Map();
     masterData.forEach((row) => {
-        const code = String((row && row["Product Code"]) || '').trim();
+        const code = masterCode(row);
         if (!code) return;
-        const desc = String((row && row["Product Description"]) || '').trim();
+        const desc = masterDesc(row);
         if (!codeToDesc.has(code)) codeToDesc.set(code, desc);
     });
 
@@ -577,9 +648,9 @@ function updateMasterCodesDatalist() {
 }
 
 function hasMasterCode(code) {
-    const normalized = String(code || '').trim().toUpperCase();
+    const normalized = normalizeCode(code).toUpperCase();
     if (!normalized) return false;
-    return masterData.some((row) => String((row && row["Product Code"]) || '').trim().toUpperCase() === normalized);
+    return masterData.some((row) => masterCode(row).toUpperCase() === normalized);
 }
 
 function wireMasterOnlyInputs() {
@@ -615,7 +686,7 @@ function refreshAllTables() {
 // --------------------------------------------------------
 document.getElementById('inward-form').addEventListener('submit', function(e) {
     e.preventDefault();
-    const partCode = document.getElementById('in-part').value;
+    const partCode = normalizeCode(document.getElementById('in-part').value);
     if (!hasMasterCode(partCode)) {
         alert('Part Code must exist in Master.');
         return;
@@ -623,7 +694,7 @@ document.getElementById('inward-form').addEventListener('submit', function(e) {
     inwardData.push({
         _id: makeId(),
         _createdAt: Date.now(),
-        "Date": document.getElementById('in-date').value.split('-').reverse().join('-'), // YYYY-MM-DD to DD-MM-YYYY
+        "Date": document.getElementById('in-date').value.split('-').reverse().join('-'),
         "DC No / Inv No": document.getElementById('in-dc').value,
         "Part Code": partCode,
         "Quantity": Number(document.getElementById('in-qty').value),
@@ -639,7 +710,7 @@ document.getElementById('inward-form').addEventListener('submit', function(e) {
 
 document.getElementById('outward-form').addEventListener('submit', function(e) {
     e.preventDefault();
-    const productCode = document.getElementById('out-part').value;
+    const productCode = normalizeCode(document.getElementById('out-part').value);
     if (!hasMasterCode(productCode)) {
         alert('Product Code must exist in Master.');
         return;
@@ -668,7 +739,7 @@ document.getElementById('master-form').addEventListener('submit', function(e) {
     masterData.push({
         _id: makeId(),
         _createdAt: Date.now(),
-        "Product Code": document.getElementById('mast-code').value,
+        "Product Code": normalizeCode(document.getElementById('mast-code').value),
         "Product Description": document.getElementById('mast-desc').value,
         "MOQ / ROL": Number(document.getElementById('mast-moq').value),
         "UOM": document.getElementById('mast-uom').value
@@ -807,8 +878,8 @@ function buildStyledReportWorkbook() {
         idx + 1,
         row["Date"] || '',
         row["DC No / Inv No"] || '',
-        row["Part Code"] || '',
-        Number(row["Quantity"] || 0),
+        inwardCode(row) || '',
+        inwardQty(row),
         row["Location"] || '',
         row["Remarks"] || ''
     ]);
@@ -840,8 +911,8 @@ function buildStyledReportWorkbook() {
         row["Date"] || '',
         row["Invoice No"] || '',
         row["DC No"] || '',
-        row["Product Code"] || '',
-        Number(row["Quantity"] || 0),
+        outwardCode(row) || '',
+        outwardQty(row),
         row["Delivery Location"] || '',
         row["Approved By"] || '',
         row["Remarks"] || ''
@@ -862,10 +933,10 @@ function buildStyledReportWorkbook() {
     const masterHeaders = ['S.No', 'Product Code', 'Product Description', 'MOQ / ROL', 'UOM'];
     const masterRows = masterData.map((row, idx) => [
         idx + 1,
-        row["Product Code"] || '',
-        row["Product Description"] || '',
-        Number(row["MOQ / ROL"] || 0),
-        row["UOM"] || ''
+        masterCode(row) || '',
+        masterDesc(row) || '',
+        masterMoq(row),
+        masterUom(row) || ''
     ]);
     const masterAoa = [
         ['Borg Warner Masters', ...Array(masterHeaders.length - 1).fill('')],
