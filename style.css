@@ -1,0 +1,470 @@
+:root {
+    /* Excel / Office Colors */
+    --excel-green: #107c41;
+    --excel-green-dark: #004b1c;
+    --excel-green-hover: #185c37;
+    --excel-grey-bg: #f3f2f1;
+    --excel-border: #d4d4d4;
+    --excel-border-light: #e1dfdd;
+    --excel-text: #323130;
+    --excel-text-muted: #605e5c;
+    --excel-selection: #c6e0b4;
+
+    /* Theme colors from screenshots */
+    --theme-red: #ff0000;
+    --theme-red-light: #fce4d6;
+    --theme-blue: #0070c0;
+    --theme-blue-light: #ddebf7;
+    --theme-purple: #da70d6;
+    --theme-purple-light: #f2e0f7;
+    --theme-darkblue: #002060;
+    --theme-darkblue-light: #fce4d6;
+    
+    --risk-no: #92d050;
+    --risk-yes: #ff0000;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
+    background-color: #ffffff;
+    color: var(--excel-text);
+    font-size: 14px;
+    overflow: hidden; /* Prevent body scroll, layout manages its own scroll */
+}
+
+.office-layout {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+/* 1. Header */
+.office-header {
+    background-color: var(--excel-green);
+    color: white;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.app-launcher {
+    font-size: 18px;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 4px;
+}
+
+.app-launcher:hover { background-color: var(--excel-green-hover); }
+
+.app-title {
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.header-center {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.search-bar {
+    background-color: rgba(255,255,255,0.2);
+    border-radius: 4px;
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 400px;
+    font-size: 14px;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+}
+
+.profile-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: #fff;
+    color: var(--excel-green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 12px;
+}
+
+/* 2. Ribbon Toolbar */
+.office-ribbon {
+    background-color: var(--excel-grey-bg);
+    border-bottom: 1px solid var(--excel-border);
+}
+
+.ribbon-tabs {
+    display: flex;
+    padding-top: 4px;
+}
+
+.ribbon-tab {
+    padding: 4px 16px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    color: var(--excel-text);
+}
+
+.ribbon-tab:hover { background-color: rgba(0,0,0,0.05); }
+
+.ribbon-tab.active {
+    background-color: #fff;
+    border-bottom-color: var(--excel-green);
+    font-weight: 600;
+}
+
+.ribbon-tools {
+    display: flex;
+    padding: 8px 16px;
+    background-color: #fff;
+    gap: 16px;
+    align-items: center;
+    height: 70px;
+}
+
+.tool-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.tool-divider {
+    width: 1px;
+    height: 40px;
+    background-color: var(--excel-border);
+}
+
+.ribbon-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 12px;
+    color: var(--excel-text);
+    min-width: 60px;
+}
+
+.ribbon-btn:hover {
+    background-color: var(--excel-grey-bg);
+    border-color: var(--excel-border-light);
+}
+
+.tool-icon {
+    font-size: 24px;
+    margin-bottom: 4px;
+}
+
+.text-yellow { color: #d4a106; }
+.text-blue { color: #0078d4; }
+.text-green { color: #107c41; }
+
+.ribbon-status {
+    font-size: 13px;
+    color: var(--excel-text-muted);
+}
+
+/* 3. Formula Bar */
+.formula-bar {
+    display: flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--excel-border);
+    background-color: #fff;
+    font-size: 13px;
+}
+
+.name-box {
+    width: 100px;
+    border: 1px solid var(--excel-border);
+    padding: 4px 8px;
+    text-align: center;
+    margin-right: 8px;
+    background-color: #fff;
+}
+
+.fx-button {
+    padding: 4px 8px;
+    color: var(--excel-text-muted);
+    border-right: 1px solid var(--excel-border);
+    margin-right: 8px;
+    cursor: pointer;
+}
+
+.formula-input {
+    flex: 1;
+    border: 1px solid var(--excel-border);
+    padding: 4px 8px;
+    background-color: #fff;
+}
+
+/* 4. Main Workspace & Data Entry */
+.office-workspace {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: auto;
+    background-color: #fff;
+    position: relative;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.data-entry-pane {
+    background-color: var(--excel-grey-bg);
+    border-bottom: 1px solid var(--excel-border);
+    padding: 12px 24px;
+}
+
+.pane-title {
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--excel-green-dark);
+}
+
+.excel-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.excel-form input {
+    border: 1px solid var(--excel-border);
+    padding: 6px 10px;
+    font-family: inherit;
+    font-size: 13px;
+    min-width: 150px;
+    flex: 1;
+}
+
+.excel-form input:focus {
+    outline: 1px solid var(--excel-green);
+    border-color: var(--excel-green);
+}
+
+.btn-excel {
+    background-color: var(--excel-green);
+    color: white;
+    border: none;
+    padding: 6px 16px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.btn-excel:hover {
+    background-color: var(--excel-green-hover);
+}
+
+.btn-excel-secondary {
+    background-color: #f3f2f1;
+    color: var(--excel-text);
+    border: 1px solid var(--excel-border);
+    padding: 6px 16px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.btn-excel-secondary:hover {
+    background-color: #e1dfdd;
+}
+
+.filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.filter-bar input {
+    border: 1px solid var(--excel-border);
+    padding: 6px 10px;
+    font-family: inherit;
+    font-size: 13px;
+    min-width: 150px;
+}
+
+.filter-count {
+    color: var(--excel-text-muted);
+    font-size: 13px;
+    padding-left: 6px;
+}
+
+.btn-excel-danger {
+    background-color: #a80000;
+    color: #fff;
+    border: none;
+    padding: 4px 10px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.btn-excel-danger:hover {
+    background-color: #8f0000;
+}
+
+.btn-excel-danger:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* 5. Excel Grid (The Tables) */
+.grid-container {
+    padding: 0;
+    margin: 0;
+}
+
+.excel-grid {
+    border-collapse: collapse;
+    width: max-content; /* Let it stretch */
+    min-width: 100%;
+}
+
+.excel-grid th, .excel-grid td {
+    border: 1px solid var(--excel-border);
+    padding: 6px 10px;
+    text-align: center;
+    font-size: 14px;
+}
+
+
+.sheet-title {
+    color: white;
+    font-size: 16px;
+    padding: 8px;
+    text-align: left;
+}
+
+.col-head {
+    color: #000;
+    font-weight: 600;
+}
+
+/* Thematic Colors from Screenshots */
+.red-theme { background-color: var(--theme-red); }
+.red-light { background-color: var(--theme-red-light); }
+
+.blue-theme { background-color: var(--theme-blue); }
+.blue-light { background-color: var(--theme-blue-light); }
+
+.purple-theme { background-color: var(--theme-purple); }
+.purple-light { background-color: var(--theme-purple-light); }
+
+.darkblue-theme { background-color: var(--theme-darkblue); }
+.darkblue-light { background-color: var(--theme-darkblue-light); }
+
+.excel-grid tbody tr:hover td {
+    background-color: rgba(0,0,0,0.02);
+}
+
+/* Specific formatting */
+.risk-level-no {
+    background-color: var(--risk-no) !important;
+    color: black;
+    font-weight: bold;
+}
+
+.risk-level-yes {
+    background-color: var(--risk-yes) !important;
+    color: white;
+    font-weight: bold;
+}
+
+.risk-header-no {
+    background-color: var(--risk-no) !important;
+    color: black !important;
+}
+
+.risk-header-yes {
+    background-color: var(--risk-yes) !important;
+    color: white !important;
+}
+
+.qty-highlight {
+    background-color: #ffc7ce !important;
+    color: #9c0006;
+}
+
+/* 6. Bottom Sheet Tabs */
+.sheet-tabs-bar {
+    background-color: var(--excel-grey-bg);
+    border-top: 1px solid var(--excel-border);
+    display: flex;
+    align-items: center;
+    height: 36px;
+    font-size: 13px;
+    padding: 0 8px;
+}
+
+.sheet-controls {
+    display: flex;
+    gap: 8px;
+    color: var(--excel-text-muted);
+    margin-right: 16px;
+}
+
+.sheet-controls i { cursor: pointer; }
+
+.sheet-tab {
+    padding: 0 16px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    border-right: 1px solid var(--excel-border);
+    border-left: 1px solid transparent;
+    color: var(--excel-text);
+}
+
+.sheet-tab:hover {
+    background-color: rgba(0,0,0,0.05);
+}
+
+.sheet-tab.active {
+    background-color: #fff;
+    border-bottom: 3px solid var(--excel-green);
+    font-weight: 600;
+    color: var(--excel-green);
+    border-left: 1px solid var(--excel-border);
+}
+
+.sheet-add {
+    padding: 0 12px;
+    cursor: pointer;
+    color: var(--excel-text-muted);
+}
+.sheet-add:hover { color: var(--excel-text); }

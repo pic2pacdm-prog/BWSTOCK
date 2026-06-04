@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BW Stock System - Excel</title>
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- SheetJS for Excel DB functionality -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div class="office-layout">
+        <!-- Top Header (Excel Green) -->
+        <header class="office-header">
+            <div class="header-left">
+                <div class="app-launcher"><i class="fa-solid fa-braille"></i></div>
+                <div class="app-title">Excel</div>
+            </div>
+            <div class="header-center">
+                <div class="search-bar">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <span>BW Stock System.xlsx - Saved</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="profile-circle">BW</div>
+            </div>
+        </header>
+
+        <!-- Ribbon Toolbar -->
+        <div class="office-ribbon">
+            <div class="ribbon-tabs">
+                <div class="ribbon-tab active">File</div>
+                <div class="ribbon-tab">Home</div>
+                <div class="ribbon-tab">Insert</div>
+                <div class="ribbon-tab">Data</div>
+            </div>
+            <div class="ribbon-tools">
+                <div class="tool-group">
+                    <button id="open-local-db" class="ribbon-btn">
+                        <i class="fa-regular fa-folder-open tool-icon text-green"></i>
+                        <span>Open (Auto Save)</span>
+                    </button>
+                    <label for="excel-upload" class="ribbon-btn">
+                        <i class="fa-regular fa-folder-open tool-icon text-yellow"></i>
+                        <span>Import Master</span>
+                    </label>
+                    <input type="file" id="excel-upload" accept=".xlsx, .xls" style="display: none;" />
+                    
+                    <button id="download-db" class="ribbon-btn">
+                        <i class="fa-regular fa-floppy-disk tool-icon text-blue"></i>
+                        <span>Save Database</span>
+                    </button>
+
+                    <button id="export-report" class="ribbon-btn">
+                        <i class="fa-regular fa-file-excel tool-icon text-green"></i>
+                        <span>Export Excel</span>
+                    </button>
+
+                    <button id="template-db" class="ribbon-btn">
+                        <i class="fa-solid fa-download tool-icon text-green"></i>
+                        <span>Download Template</span>
+                    </button>
+                </div>
+                <div class="tool-divider"></div>
+                <div class="tool-group">
+                    <div class="ribbon-status" id="db-status">
+                        <i class="fa-solid fa-circle-info"></i> Open Local DB for auto-save, or import an Excel file.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formula Bar -->
+        <div class="formula-bar">
+            <div class="name-box">A1</div>
+            <div class="fx-button"><i class="fa-solid fa-italic">f</i><span style="font-size: 10px;">x</span></div>
+            <div class="formula-input" id="current-date-display">System Ready</div>
+        </div>
+
+        <!-- Main Workspace (Grid Area) -->
+        <main class="office-workspace">
+            
+            <!-- Live Stock Dashboard -->
+            <section id="live-stock" class="tab-content active">
+                <div class="grid-container">
+                    <table class="excel-grid" id="live-stock-table">
+                        <thead>
+                            <tr>
+                                <th id="live-stock-title" colspan="7" class="sheet-title red-theme">YPIPL - Borg Warner Stock Register</th>
+                            </tr>
+                            <tr>
+                                <th class="col-head red-light">S.No</th>
+                                <th class="col-head red-light">Product Code</th>
+                                <th class="col-head red-light">Product Description</th>
+                                <th class="col-head red-light">UOM</th>
+                                <th class="col-head red-light">Available Quantity</th>
+                                <th class="col-head red-light">MOQ / ROL</th>
+                                <th id="risk-level-header" class="col-head red-light">Risk Level</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Stock Inward -->
+            <section id="stock-inward" class="tab-content">
+                <div class="data-entry-pane">
+                    <div class="pane-title"><i class="fa-solid fa-plus"></i> Add Inward Entry</div>
+                    <form id="inward-form" class="excel-form">
+                        <input type="date" id="in-date" required>
+                        <input type="text" id="in-dc" placeholder="DC No / Inv No">
+                        <input type="text" id="in-part" placeholder="Part Code" list="master-codes" required>
+                        <input type="number" id="in-qty" placeholder="Quantity" required>
+                        <input type="text" id="in-loc" placeholder="Location">
+                        <input type="text" id="in-rem" placeholder="Remarks">
+                        <button type="submit" class="btn-excel">Add Entry</button>
+                    </form>
+                    <div class="filter-bar">
+                        <input type="date" id="in-filter-from" aria-label="From date">
+                        <input type="date" id="in-filter-to" aria-label="To date">
+                        <button type="button" class="btn-excel" id="in-filter-apply">Filter</button>
+                        <button type="button" class="btn-excel-secondary" id="in-filter-clear">Clear</button>
+                        <div class="filter-count" id="in-filter-count"></div>
+                    </div>
+                </div>
+                <div class="grid-container">
+                    <table class="excel-grid" id="inward-table">
+                        <thead>
+                            <tr>
+                                <th colspan="8" class="sheet-title blue-theme">Borg Warner Stock Inward Register</th>
+                            </tr>
+                            <tr>
+                                <th class="col-head blue-light">S.No</th>
+                                <th class="col-head blue-light">Date</th>
+                                <th class="col-head blue-light">DC No / Inv No</th>
+                                <th class="col-head blue-light">Part Code</th>
+                                <th class="col-head blue-light">Quantity</th>
+                                <th class="col-head blue-light">Location</th>
+                                <th class="col-head blue-light">Remarks</th>
+                                <th class="col-head blue-light">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Stock Outward -->
+            <section id="stock-outward" class="tab-content">
+                <div class="data-entry-pane">
+                    <div class="pane-title"><i class="fa-solid fa-minus"></i> Add Outward Entry</div>
+                    <form id="outward-form" class="excel-form">
+                        <input type="date" id="out-date" required>
+                        <input type="text" id="out-inv" placeholder="Invoice No">
+                        <input type="text" id="out-dc" placeholder="DC No">
+                        <input type="text" id="out-part" placeholder="Part Code" list="master-codes" required>
+                        <input type="number" id="out-qty" placeholder="Quantity" required>
+                        <input type="text" id="out-loc" placeholder="Delivery Location">
+                        <input type="text" id="out-app" placeholder="Approved By">
+                        <input type="text" id="out-rem" placeholder="Remarks">
+                        <button type="submit" class="btn-excel">Add Entry</button>
+                    </form>
+                    <div class="filter-bar">
+                        <input type="date" id="out-filter-from" aria-label="From date">
+                        <input type="date" id="out-filter-to" aria-label="To date">
+                        <button type="button" class="btn-excel" id="out-filter-apply">Filter</button>
+                        <button type="button" class="btn-excel-secondary" id="out-filter-clear">Clear</button>
+                        <div class="filter-count" id="out-filter-count"></div>
+                    </div>
+                </div>
+                <datalist id="master-codes"></datalist>
+                <div class="grid-container">
+                    <table class="excel-grid" id="outward-table">
+                        <thead>
+                            <tr>
+                                <th colspan="10" class="sheet-title purple-theme">Borg Warner Stock Outward Register</th>
+                            </tr>
+                            <tr>
+                                <th class="col-head purple-light">S.No</th>
+                                <th class="col-head purple-light">Date</th>
+                                <th class="col-head purple-light">Invoice No</th>
+                                <th class="col-head purple-light">DC No</th>
+                                <th class="col-head purple-light">Product Code</th>
+                                <th class="col-head purple-light">Quantity</th>
+                                <th class="col-head purple-light">Delivery Location</th>
+                                <th class="col-head purple-light">Approved By</th>
+                                <th class="col-head purple-light">Remarks</th>
+                                <th class="col-head purple-light">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Master -->
+            <section id="master" class="tab-content">
+                <div class="data-entry-pane">
+                    <div class="pane-title"><i class="fa-solid fa-database"></i> Add Master Product</div>
+                    <form id="master-form" class="excel-form">
+                        <input type="text" id="mast-code" placeholder="Product Code" required>
+                        <input type="text" id="mast-desc" placeholder="Product Description" required>
+                        <input type="number" id="mast-moq" placeholder="MOQ / ROL" required>
+                        <input type="text" id="mast-uom" placeholder="UOM (e.g., Kgs)" required>
+                        <button type="submit" class="btn-excel">Add Product</button>
+                    </form>
+                </div>
+                <div class="grid-container">
+                    <table class="excel-grid" id="master-table">
+                        <thead>
+                            <tr>
+                                <th colspan="5" class="sheet-title darkblue-theme">Borg Warner Masters</th>
+                            </tr>
+                            <tr>
+                                <th class="col-head darkblue-light">S.No</th>
+                                <th class="col-head darkblue-light">Product Code</th>
+                                <th class="col-head darkblue-light">Product Description</th>
+                                <th class="col-head darkblue-light">MOQ / ROL</th>
+                                <th class="col-head darkblue-light">UOM</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+
+        <!-- Bottom Sheet Tabs (Excel Style) -->
+        <footer class="sheet-tabs-bar">
+            <div class="sheet-controls">
+                <i class="fa-solid fa-caret-left"></i>
+                <i class="fa-solid fa-caret-right"></i>
+            </div>
+            <div class="sheet-tab active" data-tab="live-stock" onclick="switchTab('live-stock')">
+                Live Stock Dashboard
+            </div>
+            <div class="sheet-tab" data-tab="stock-inward" onclick="switchTab('stock-inward')">
+                Stock Inward
+            </div>
+            <div class="sheet-tab" data-tab="stock-outward" onclick="switchTab('stock-outward')">
+                Stock Outward
+            </div>
+            <div class="sheet-tab" data-tab="master" onclick="switchTab('master')">
+                Master
+            </div>
+            <div class="sheet-add">
+                <i class="fa-solid fa-plus"></i>
+            </div>
+        </footer>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
